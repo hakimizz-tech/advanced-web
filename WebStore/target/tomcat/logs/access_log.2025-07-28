@@ -1,0 +1,5 @@
+0:0:0:0:0:0:0:1 - - [28/Jul/2025:09:31:03 +0300] "GET /database-jstl-demo.jsp HTTP/1.1" 200 1713 http-bio-8080-exec-1 1630
+0:0:0:0:0:0:0:1 - - [28/Jul/2025:09:31:10 +0300] "GET / HTTP/1.1" 200 395 http-bio-8080-exec-3 111
+0:0:0:0:0:0:0:1 - - [28/Jul/2025:09:31:15 +0300] "GET /http-action.jsp HTTP/1.1" 200 922 http-bio-8080-exec-4 96
+0:0:0:0:0:0:0:1 - - [28/Jul/2025:09:31:20 +0300] "GET /http-action?url=https%3A%2F%2Fapi.github.com%2Fusers%2Fgoogle HTTP/1.1" 200 1307 http-bio-8080-exec-5 1368
+0:0:0:0:0:0:0:1 - - [28/Jul/2025:09:31:36 +0300] "POST /http-action HTTP/1.1" 200 39 http-bio-8080-exec-6 1538
