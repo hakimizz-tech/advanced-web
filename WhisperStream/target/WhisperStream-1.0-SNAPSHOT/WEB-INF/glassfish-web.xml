@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glassfish-web-app PUBLIC "-//GlassFish.org//DTD GlassFish Application Server 3.1 Servlet 3.0//EN" "http://glassfish.org/dtds/glassfish-web-app_3_0-1.dtd">
+<glassfish-web-app>
+    <resource-ref>
+        <res-ref-name>jms/MyQueue</res-ref-name>
+        <jndi-name>jms/MyQueue</jndi-name>
+    </resource-ref>
+    <resource-ref>
+        <res-ref-name>jms/MyConnectionFactory</res-ref-name>
+        <jndi-name>jms/MyConnectionFactory</jndi-name>
+    </resource-ref>
+</glassfish-web-app>

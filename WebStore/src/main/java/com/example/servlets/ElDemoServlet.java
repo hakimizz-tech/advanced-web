@@ -16,6 +16,7 @@ public class ElDemoServlet extends HttpServlet {
             throws ServletException, IOException {
 
         // 1. Create a simple data object (Model)
+        
         Address address = new Address("New York", "10001");
         Student student = new Student(1, "John Doe", address);
 

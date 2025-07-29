@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE resources PUBLIC "-//GlassFish.org//DTD GlassFish Application Server 3.1 Resource Definitions//EN" "http://glassfish.org/dtds/glassfish-resources_1_5.dtd">
+<resources>
+  <jms-resource dest-type="javax.jms.Queue" jndi-name="jms/MyQueue" object-type="user"/>
+  <connector-connection-pool name="jms/MyConnectionFactory-pool" resource-adapter-name="jmsra" connection-definition-name="javax.jms.ConnectionFactory" transaction-support="LocalTransaction"/>
+  <connector-resource enabled="true" jndi-name="jms/MyConnectionFactory" pool-name="jms/MyConnectionFactory-pool"/>
+</resources>

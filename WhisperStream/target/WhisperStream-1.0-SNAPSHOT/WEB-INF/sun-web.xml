@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sun-web-app PUBLIC "-//Sun Microsystems, Inc.//DTD GlassFish Application Server 3.0 Servlet 3.0//EN" "http://www.sun.com/software/appserver/dtds/sun-web-app_3_0-0.dtd">
+<sun-web-app>
+  <resource-ref>
+    <res-ref-name>jms/MyQueue</res-ref-name>
+    <jndi-name>jms/MyQueue</jndi-name>
+  </resource-ref>
+  <resource-ref>
+    <res-ref-name>jms/MyConnectionFactory</res-ref-name>
+    <jndi-name>jms/MyConnectionFactory</jndi-name>
+  </resource-ref>
+</sun-web-app>

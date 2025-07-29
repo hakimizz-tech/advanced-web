@@ -12,16 +12,17 @@ public class App
 
         Statement stmt = conn.createStatement();
 
-        dbconn.retrieveColumnValues(conn, 
-        "SELECT * FROM student", 
-        new String[]{"id", "name", "number"}
-        );
+        // dbconn.retrieveColumnValues(conn, 
+        // "SELECT * FROM student", 
+        // new String[]{"id", "name", "number"}
+        // );
 
-        dbconn.insertInBatch(conn, "insert into emp (eid, ename) values(?, ?)", new String[] {
-                "4353", "Mary",
-                "5392", "Sharon", 
-                "3921", "Louis",
-        });
+        // dbconn.insertInBatch(conn, "insert into emp (eid, ename) values(?, ?)", new String[] {
+        //         "4353", "Mary",
+        //         "5392", "Sharon", 
+        //         "3921", "Louis",
+        // });
+        dbconn.createTable(stmt, "");
 
     }
 }

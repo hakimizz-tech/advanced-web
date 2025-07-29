@@ -23,6 +23,7 @@ public class AddServlet extends HttpServlet {
             int sum = num1 + num2;
 
             // response.getWriter().append("The sum is: ").append(String.valueOf(sum));
+
             request.setAttribute("sum", sum);
 
             RequestDispatcher rd = request.getRequestDispatcher("square");
