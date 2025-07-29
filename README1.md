@@ -950,3 +950,275 @@ The implementation consists of three main parts:
     ```
 
 This implementation provides a simple yet effective way to perform background tasks in a web application, with the results being made available to the frontend for display.
+
+## Java Message Service (JMS)
+
+### What is JMS?
+
+The Java Message Service (JMS) is a Java API that allows applications to create, send, receive, and read messages. It provides a common way for Java applications to communicate with other messaging implementations. JMS is a part of the Java Platform, Enterprise Edition (Java EE) and is defined by a set of interfaces and associated semantics.
+
+### JMS Architecture
+
+The JMS architecture consists of the following components:
+
+*   **JMS Provider**: A messaging system that implements the JMS interfaces and provides administrative and control features.
+*   **JMS Client**: An application or component that produces and/or consumes messages.
+    *   **Producer/Publisher**: A JMS client that creates and sends messages.
+    *   **Consumer/Subscriber**: A JMS client that receives messages.
+*   **Administered Objects**: Preconfigured JMS objects created by an administrator for the use of clients.
+    *   **ConnectionFactory**: The object a client uses to create a connection to a provider.
+    *   **Destination**: The object a client uses to specify the destination of messages it is sending and the source of messages it is receiving.
+*   **JNDI (Java Naming and Directory Interface)**: A Java API for a directory service that allows Java programs to discover and look up data and objects via a name. JMS administered objects are typically stored in a JNDI namespace.
+
+Here is a diagram illustrating the JMS architecture:
+
+```mermaid
+graph TD
+    subgraph JMS Client
+        A[Producer] -->|Sends| C(Message);
+        D[Consumer] -->|Receives| C;
+    end
+    subgraph JMS Provider
+        C --> E{Destination};
+        E --> C;
+    end
+    A --> F((ConnectionFactory));
+    D --> F;
+    F --> G((Connection));
+    G --> H((Session));
+    H --> A;
+    H --> D;
+    I((JNDI)) --> F;
+    I --> E;
+```
+
+**Explanation of the diagram:**
+
+1.  The **JMS Client** (Producer and Consumer) looks up the **ConnectionFactory** and **Destination** objects from the **JNDI** service.
+2.  The client uses the **ConnectionFactory** to create a **Connection** to the **JMS Provider**.
+3.  The **Connection** is used to create a **Session**.
+4.  The **Producer** uses the **Session** to create a **MessageProducer** to send messages to the **Destination**.
+5.  The **Consumer** uses the **Session** to create a **MessageConsumer** to receive messages from the **Destination**.
+
+### JMS Provider
+
+A JMS provider is a messaging system that implements the JMS specification. It is responsible for routing and delivering messages. Some popular JMS providers include:
+
+*   Apache ActiveMQ
+*   RabbitMQ
+*   IBM MQ
+*   Oracle WebLogic JMS
+
+### JMS Client
+
+A JMS client is a Java application that uses the JMS API to send and receive messages.
+
+*   **Producer (or Publisher)**: A client that creates and sends messages to a destination.
+*   **Consumer (or Subscriber)**: A client that receives messages from a destination.
+
+### Administered Tool
+
+An administered tool is a tool provided by a JMS provider to manage and configure the messaging system. It is used to create and manage administered objects such as connection factories and destinations.
+
+### JNDI (Java Naming and Directory Interface)
+
+JNDI is a Java API that provides a unified interface to various naming and directory services. In the context of JMS, JNDI is used to store and retrieve administered objects. This allows JMS clients to be decoupled from the specific configuration of the JMS provider.
+
+## JMS Producer and Consumer Implementation
+
+This section provides a practical example of a JMS message producer and a message-driven bean (MDB) consumer within the `WhisperStream` application.
+
+### JMS Producer: `MessageProducerServlet.java`
+
+This servlet acts as a message producer. It receives a message from an HTTP GET request and sends it to a JMS queue.
+
+```java
+package com.example;
+
+import jakarta.annotation.Resource;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSProducer;
+import jakarta.jms.Queue;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/produce")
+public class MessageProducerServlet extends HttpServlet {
+
+    @Resource(lookup = "java:comp/DefaultJMSConnectionFactory")
+    private ConnectionFactory connectionFactory;
+
+    @Resource(lookup = "jms/myQueue")
+    private Queue queue;
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String messageText = request.getParameter("message");
+        if (messageText == null) {
+            messageText = "Hello, World!";
+        }
+
+        try (JMSContext context = connectionFactory.createContext()) {
+            JMSProducer producer = context.createProducer();
+            producer.send(queue, messageText);
+        }
+
+        response.getWriter().println("Message sent: " + messageText);
+    }
+}
+```
+
+#### Line-by-Line Explanation
+
+*   `package com.example;`: Declares the package for the class.
+*   `import ...;`: Imports the necessary JMS, Servlet, and I/O classes.
+*   `@WebServlet("/produce")`: Annotates the class as a servlet and maps it to the URL `/produce`.
+*   `public class MessageProducerServlet extends HttpServlet {`: Defines the servlet class.
+*   `@Resource(lookup = "java:comp/DefaultJMSConnectionFactory")`: Injects the default JMS ConnectionFactory resource provided by the application server. The lookup name is a standard JNDI name.
+*   `private ConnectionFactory connectionFactory;`: Declares the variable to hold the injected `ConnectionFactory`.
+*   `@Resource(lookup = "jms/myQueue")`: Injects the JMS Queue destination. The lookup name `jms/myQueue` is a JNDI name configured in the application server (e.g., in `glassfish-resources.xml`).
+*   `private Queue queue;`: Declares the variable to hold the injected `Queue`.
+*   `protected void doGet(...)`: Handles HTTP GET requests.
+*   `String messageText = request.getParameter("message");`: Retrieves the `message` parameter from the request URL.
+*   `if (messageText == null) { ... }`: If the `message` parameter is not provided, it defaults to "Hello, World!".
+*   `try (JMSContext context = connectionFactory.createContext()) { ... }`: Creates a `JMSContext` from the `ConnectionFactory`. The try-with-resources statement ensures the context is automatically closed. `JMSContext` combines a connection and a session.
+*   `JMSProducer producer = context.createProducer();`: Creates a `JMSProducer` from the context.
+*   `producer.send(queue, messageText);`: Sends the message to the specified `queue`.
+*   `response.getWriter().println("Message sent: " + messageText);`: Writes a confirmation message to the HTTP response.
+
+### JMS Consumer: `MyMDB.java`
+
+This is a Message-Driven Bean (MDB) that acts as a message consumer. It listens for messages on the `jms/myQueue` and processes them as they arrive.
+
+```java
+package com.example;
+
+import jakarta.ejb.ActivationConfigProperty;
+import jakarta.ejb.MessageDriven;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
+
+@MessageDriven(
+    activationConfig = {
+        @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/myQueue"),
+        @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Queue")
+    }
+)
+public class MyMDB implements MessageListener {
+
+    @Override
+    public void onMessage(Message message) {
+        try {
+            if (message instanceof TextMessage) {
+                TextMessage textMessage = (TextMessage) message;
+                System.out.println("MDB Received Message: " + textMessage.getText());
+            } else {
+                System.out.println("MDB Received non-text message.");
+            }
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+#### Line-by-Line Explanation
+
+*   `package com.example;`: Declares the package for the class.
+*   `import ...;`: Imports the necessary EJB and JMS classes.
+*   `@MessageDriven(...)`: Annotates the class as a Message-Driven Bean.
+*   `activationConfig = { ... }`: Specifies the configuration for the MDB.
+*   `@ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/myQueue")`: Tells the EJB container that this MDB should listen on the JMS destination with the JNDI name `jms/myQueue`.
+*   `@ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Queue")`: Specifies that the destination type is a `jakarta.jms.Queue`.
+*   `public class MyMDB implements MessageListener {`: Defines the MDB class, which must implement the `MessageListener` interface.
+*   `@Override public void onMessage(Message message) {`: This is the callback method that the EJB container invokes when a message arrives at the destination.
+*   `try { ... } catch (JMSException e) { ... }`: A try-catch block to handle potential `JMSException`.
+*   `if (message instanceof TextMessage) { ... }`: Checks if the received message is a `TextMessage`.
+*   `TextMessage textMessage = (TextMessage) message;`: Casts the `Message` to a `TextMessage`.
+*   `System.out.println("MDB Received Message: " + textMessage.getText());`: Retrieves the text from the message and prints it to the console.
+*   `else { ... }`: Handles cases where the message is not a `TextMessage`.
+
+## Message-Driven Beans (MDB)
+
+### What is a Message-Driven Bean?
+
+A Message-Driven Bean (MDB) is a type of Enterprise JavaBean (EJB) that provides an event-based, asynchronous way to process messages. MDBs are designed to act as message listeners in the Java EE ecosystem, integrating with messaging systems like the Java Message Service (JMS).
+
+Unlike Session Beans, which are invoked synchronously through method calls, MDBs are triggered by the arrival of a message at a specific destination (a queue or a topic). The EJB container manages the lifecycle of the MDB instances, automatically creating a pool of beans to process incoming messages concurrently. This makes MDBs a powerful and scalable solution for building loosely coupled, message-driven architectures.
+
+### How MDBs work with JMS
+
+When used with JMS, an MDB is configured to listen on a specific JMS destination. Here's the typical workflow:
+
+1.  **Configuration:** The MDB is annotated with `@MessageDriven` and its `activationConfig` is set to point to a JMS destination (e.g., `jms/myQueue`) and specify the destination type (e.g., `jakarta.jms.Queue`).
+2.  **Deployment:** When the application is deployed, the EJB container reads these annotations.
+3.  **Listening:** The container establishes a connection to the JMS provider and starts listening for messages on the configured destination.
+4.  **Message Arrival:** When a message arrives at the destination, the JMS provider delivers it to the EJB container.
+5.  **Invocation:** The container picks an MDB instance from its pool and invokes its `onMessage()` method, passing the incoming message as an argument.
+6.  **Processing:** The business logic inside the `onMessage()` method is executed to process the message.
+
+This entire process is managed by the container, freeing the developer from the complexities of connection management, session handling, and concurrent message consumption.
+
+### Implementation Example: `MyMDB.java`
+
+The `MyMDB.java` class from the `WhisperStream` project is a perfect example of a JMS-based Message-Driven Bean.
+
+```java
+package com.example;
+
+import jakarta.ejb.ActivationConfigProperty;
+import jakarta.ejb.MessageDriven;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
+
+@MessageDriven(
+    activationConfig = {
+        @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/myQueue"),
+        @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Queue")
+    }
+)
+public class MyMDB implements MessageListener {
+
+    @Override
+    public void onMessage(Message message) {
+        try {
+            if (message instanceof TextMessage) {
+                TextMessage textMessage = (TextMessage) message;
+                System.out.println("MDB Received Message: " + textMessage.getText());
+            } else {
+                System.out.println("MDB Received non-text message.");
+            }
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Line-by-Line Explanation
+
+*   `package com.example;`: Declares the package where the MDB class resides.
+*   `import ...;`: Imports the necessary classes from the `jakarta.ejb` and `jakarta.jms` APIs.
+*   `@MessageDriven(...)`: This annotation marks the class as a Message-Driven Bean. The EJB container will recognize it and manage its lifecycle.
+*   `activationConfig = { ... }`: This array contains the activation configuration properties that tell the container how to connect the MDB to the messaging system.
+*   `@ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/myQueue")`: This property specifies the JNDI name of the JMS destination that this MDB will listen to. In this case, it's the queue named `jms/myQueue`.
+*   `@ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Queue")`: This property defines the type of the destination. Here, it's specified as a JMS Queue. It could also be a `jakarta.jms.Topic`.
+*   `public class MyMDB implements MessageListener {`: This is the MDB class definition. It must implement the `jakarta.jms.MessageListener` interface. This interface contains a single method, `onMessage`.
+*   `@Override public void onMessage(Message message) {`: This is the core method of the MDB. The EJB container calls this method whenever a new message arrives at the `jms/myQueue`. The `Message` object itself is passed as the argument.
+*   `try { ... } catch (JMSException e) { ... }`: This block handles potential exceptions that can occur while processing the JMS message.
+*   `if (message instanceof TextMessage) { ... }`: This line checks if the received message is of the type `TextMessage`. JMS supports various message types (ObjectMessage, BytesMessage, etc.), so it's good practice to check the type before processing.
+*   `TextMessage textMessage = (TextMessage) message;`: If the message is a `TextMessage`, it is cast to the appropriate type.
+*   `System.out.println("MDB Received Message: " + textMessage.getText());`: The content of the text message is extracted using the `getText()` method and printed to the standard output. This is where the main business logic for processing the message would go.
+*   `else { ... }`: If the message is not a `TextMessage`, a different message is printed.
+*   `e.printStackTrace();`: If a `JMSException` occurs, its stack trace is printed for debugging purposes.
+
